@@ -3,12 +3,14 @@ import java.util.concurrent.Semaphore;
 import clock.io.ClockOutput;
 
 public class ClockStatus {
+	private int time = 0;
 	private int h, m, s = 0;
 	private int ah, am, as = 0;
+	private int remainingBeeps = 20;
 	private boolean alarmStatus = false;
+	private boolean fireAlarm = false;
 	private Semaphore mutex = new Semaphore(1);
 	private Semaphore updated = new Semaphore(0);
-	private AlarmThread alarm;
 	private ClockOutput out;
 	
 	public ClockStatus(ClockOutput out) {
@@ -17,26 +19,23 @@ public class ClockStatus {
 
 	public void tick() throws InterruptedException {
 		mutex.acquire();
-		s++;
-		if (s == 60) {
-			s = 0;
-			m++;
-			if (m == 60) {
-				m = 0;
-				h++;
-				if (h == 24)
-					h = 0;
-			}
-		}
+		time++;
+		s = time % 60;
+		m = time / 60;
+		m %= 60;
+		h = time / 3600;
+		h %= 24;
 		
-		if (alarmStatus && timeForAlarm())
+		if(alarmStatus && timeForAlarm()) {
+			fireAlarm = true;
+		}
+		out.displayTime(h, m, s);
+		if (fireAlarm && remainingBeeps > 0)
 		{
-			alarm = new AlarmThread(out);	
-			alarm.start();
+			out.alarm();
+			remainingBeeps--;
 		}
-		
 		mutex.release();
-		updated.release();
 	}
 
 	private boolean timeForAlarm(){
@@ -44,14 +43,12 @@ public class ClockStatus {
 	}
 	
 	public void stopAlarm() {
-		if(alarm != null && alarm.isAlive()) alarm.interrupt();
+		fireAlarm = false;
 	}
 
 	public void setTime(int h, int m, int s) throws InterruptedException {
 		mutex.acquire();
-		this.h = h;
-		this.m = m;
-		this.s = s;
+		time = h * 3600 + m*60 + s;
 		mutex.release();
 	}
 
@@ -68,14 +65,6 @@ public class ClockStatus {
 		mutex.acquire();
 		alarmStatus = !alarmStatus;
 		temp = alarmStatus;
-		mutex.release();
-		return temp;
-	}
-
-	public int[] getTime() throws InterruptedException {
-		int[] temp = null;
-		mutex.acquire();
-		temp = new int[] { h, m, s };
 		mutex.release();
 		return temp;
 	}

@@ -12,15 +12,12 @@ public class ClockMain {
 
 		ClockStatus status = new ClockStatus(out);
 		TickerThread ticker = new TickerThread(status);
-		TimeThread updater = new TimeThread(status, out);
 		ticker.start();
-		updater.start();
 
 		while (true) {
 			in.getSemaphore().acquire();
 			UserInput userInput = in.getUserInput();
 			int choice = userInput.getChoice();
-
 			int h = userInput.getHours();
 			int m = userInput.getMinutes();
 			int s = userInput.getSeconds();
@@ -44,3 +41,9 @@ public class ClockMain {
 		}
 	}
 }
+
+/*
+ * Alt. lösning:
+ * maintråd och tickerthread, 
+ */
+

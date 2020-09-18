@@ -23,3 +23,6 @@ public class TickerThread extends Thread {
 		}
 	}
 }
+
+
+

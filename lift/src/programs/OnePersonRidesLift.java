@@ -1,3 +1,4 @@
+package programs;
 
 import lift.LiftView;
 import lift.Passenger;
