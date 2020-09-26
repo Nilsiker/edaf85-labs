@@ -15,12 +15,10 @@ public class LiftProgram {
 		Thread lt = new LiftThread(view, lift);
 		lt.start();
 
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 50; i++) {
 			pts.add(new PassengerThread(view, lift));
 		}
 		
 		for(Thread pt : pts) pt.start();
-		
-
 	}
 }

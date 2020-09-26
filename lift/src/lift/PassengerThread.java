@@ -21,8 +21,14 @@ public class PassengerThread extends Thread {
 
 			pass.begin();
 			lift.arrive(pass);
+
 			lift.enter(pass);
+			pass.enterLift();
+			lift.entered(pass);
+
 			lift.leave(pass);
+			pass.exitLift();
+			lift.left(pass);
 			pass.end();
 
 		} catch (InterruptedException e) {
