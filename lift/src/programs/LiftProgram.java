@@ -7,11 +7,12 @@ import java.util.Set;
 import lift.*;
 
 public class LiftProgram {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		LiftView view = new LiftView();
 		LiftMonitor lift = new LiftMonitor(view);
 		Set<Thread> pts = new HashSet<>();
 
+		lift.HAHA();
 		Thread lt = new LiftThread(view, lift);
 		lt.start();
 

@@ -13,7 +13,7 @@ public class WashingMessage {
 
     // available commands
 
-    public static final int SPIN_OFF       = 1; // stop barrel from rotating
+    public static final int SPIN_OFF       = 1; // stop barrel from rotating                        //
     public static final int SPIN_SLOW      = 2; // rotate barrel slowly, alternating left/right
     public static final int SPIN_FAST      = 3; // rotate barrel fast
 
