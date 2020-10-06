@@ -23,61 +23,56 @@ public class WashingProgram1 extends ActorThread<WashingMessage> {
 
     @Override
     public void run() {
-        WashingMessage fillToTen = new WashingMessage(this, WashingMessage.WATER_FILL, 10);
-        WashingMessage drain = new WashingMessage(this, WashingMessage.WATER_DRAIN);
-        WashingMessage waterIdle = new WashingMessage(this, WashingMessage.WATER_IDLE);
-        WashingMessage heatToForty = new WashingMessage(this, WashingMessage.TEMP_SET, 40);
-        WashingMessage heatIdle = new WashingMessage(this, WashingMessage.TEMP_IDLE);
-        WashingMessage wash = new WashingMessage(this, WashingMessage.SPIN_SLOW);
-        WashingMessage centrifuge = new WashingMessage(this, WashingMessage.SPIN_FAST);
-        WashingMessage spinIdle = new WashingMessage(this, WashingMessage.SPIN_OFF);
-
-
         try {
             // Lock the hatch
             io.lock(true);
 
-            water.send(fillToTen);
+            // Fill
+            water.send(fillTo(10));
             receive();
 
-
-            System.out.println("Heat to 40 degrees");
-            temp.send(heatToForty);
+            // Heat
+            temp.send(heatTo(40));
             receive();
 
-            System.out.println("Start spin!");
-            spin.send(wash);
-            sleep(60000 * 30 / Settings.SPEEDUP);
-
-            System.out.println("Turn of temperature stabilizer");
-            temp.send(heatIdle);
-
-            System.out.println("Drain");
-            water.send(drain);
+            // Start spinning for duration mins
+            spin.send(m(WashingMessage.SPIN_SLOW));
             receive();
+            sleep(60000 * 60 / Settings.SPEEDUP);
+
+            // Turn off heating
+            temp.send(m(WashingMessage.TEMP_IDLE));
+            receive();
+
+            // Rinse five times for two minutes each!
             for (int i = 0; i < 5; i++) {
-                System.out.println("Rinse start");
-                water.send(fillToTen);
+                water.send(m(WashingMessage.WATER_DRAIN));
+                receive();
+                water.send(fillTo(10));
                 receive();
                 sleep(2 * 60000 / Settings.SPEEDUP);
-                water.send(drain);
-                receive();
-                System.out.println("Rinse stop");
             }
 
-            water.send(waterIdle);
+            // Centrifuge for 5 minutes!
+            water.send(m(WashingMessage.WATER_DRAIN));
+            receive();
+            spin.send(m(WashingMessage.SPIN_FAST));
+            receive();
+            sleep(5 * 60000 / Settings.SPEEDUP);
 
-            System.out.println("Centrifuge start");
-            spin.send(centrifuge);
-            sleep(5 * 60000);
+            water.send(m(WashingMessage.WATER_DRAIN));
+            receive();
 
-            System.out.println("Stop spin");
-            spin.send(spinIdle);
+            // Close drain
+            water.send(m(WashingMessage.WATER_IDLE));
 
+            // Turn off spinning
+            spin.send(m(WashingMessage.SPIN_OFF));
+            receive();
 
+            // Lock hatch
             io.lock(false);
         } catch (InterruptedException e) {
-
             // If we end up here, it means the program was interrupt()'ed:
             // set all controllers to idle
 
@@ -86,5 +81,66 @@ public class WashingProgram1 extends ActorThread<WashingMessage> {
             spin.send(new WashingMessage(this, WashingMessage.SPIN_OFF));
             System.out.println("washing program terminated");
         }
+    }
+
+    private void wash(int duration, int temperature) throws InterruptedException {
+        // Fill
+        water.send(fillTo(10));
+        receive();
+
+        // Heat
+        temp.send(heatTo(temperature));
+        receive();
+
+        // Start spinning for duration mins
+        spin.send(m(WashingMessage.SPIN_SLOW));
+        receive();
+        sleep(60000 * duration / Settings.SPEEDUP);
+    }
+    private void coldRinse(int duration, int times) throws InterruptedException {
+        // Turn off heating
+        temp.send(m(WashingMessage.TEMP_IDLE));
+        receive();
+        for (int i = 0; i < times; i++) {
+            water.send(m(WashingMessage.WATER_DRAIN));
+            receive();
+            water.send(fillTo(10));
+            receive();
+            sleep(duration * 60000 / Settings.SPEEDUP);
+        }
+    }
+    private void unlockHatchSafely() throws InterruptedException {
+        water.send(m(WashingMessage.WATER_DRAIN));
+        receive();
+
+        // Close drain
+        water.send(m(WashingMessage.WATER_IDLE));
+
+        // Turn off spinning
+        spin.send(m(WashingMessage.SPIN_OFF));
+        receive();
+
+        // Lock hatch
+        io.lock(false);
+    }
+    private void centrifugeSafely(int min) throws InterruptedException {
+        water.send(m(WashingMessage.WATER_DRAIN));
+        receive();
+        // Centrifuge for min minutes!
+        spin.send(m(WashingMessage.SPIN_FAST));
+        receive();
+        sleep(min * 60000 / Settings.SPEEDUP);
+    }
+
+    private WashingMessage heatTo(double value) {
+        return new WashingMessage(this, WashingMessage.TEMP_SET, value);
+    }
+
+    private WashingMessage fillTo(double value) {
+        return new WashingMessage(this, WashingMessage.WATER_FILL, value);
+    }
+
+    private WashingMessage m(int type) {
+        return new WashingMessage(this, type);
     }
 }

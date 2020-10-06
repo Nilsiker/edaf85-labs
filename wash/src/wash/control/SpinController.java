@@ -26,24 +26,26 @@ public class SpinController extends ActorThread<WashingMessage> {
                 WashingMessage m = receiveWithTimeout(60000 / Settings.SPEEDUP);
 
                 // if m is null, it means a minute passed and no message was received
-                if (m != null) {
+                if (m != null && m.getCommand() <= WashingMessage.SPIN_FAST) {
                     System.out.println("got " + m);
                     int c = m.getCommand();
-                    if (c <= WashingMessage.SPIN_FAST) {
-                        io.setSpinMode(c);
-                        currentMode = c;
-                        m.getSender().send(new WashingMessage(this, WashingMessage.ACKNOWLEDGMENT));
+                    switch (c) {
+                        case WashingMessage.SPIN_OFF -> io.setSpinMode(WashingIO.SPIN_IDLE);
+                        case WashingMessage.SPIN_SLOW -> io.setSpinMode(WashingIO.SPIN_LEFT);
+                        case WashingMessage.SPIN_FAST -> io.setSpinMode(WashingIO.SPIN_FAST);
                     }
-                } else if (currentMode == WashingMessage.SPIN_SLOW) {
-                    if (direction == WashingIO.SPIN_LEFT) {
-                        direction++;
-                    } else {
-                        direction--;
-                    }
+                    currentMode = c;
+                    m.getSender().send(new WashingMessage(this, WashingMessage.ACKNOWLEDGMENT));
+                }
+
+                if (currentMode == WashingMessage.SPIN_SLOW) {
+                    direction += (direction == WashingIO.SPIN_LEFT) ? 1 : -1;
                     io.setSpinMode(direction);
                 }
+
             }
-        } catch (InterruptedException unexpected) {
+        } catch (
+                InterruptedException unexpected) {
             // we don't expect this thread to be interrupted,
             // so throw an error if it happens anyway
             throw new Error(unexpected);
